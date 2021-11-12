@@ -243,7 +243,7 @@ def main_worker(gpu, ngpus_per_node, args):
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=BATCH_SIZE, shuffle=True)
+        batch_size=args.batch_size, shuffle=True)
 
     
     test_loader = torch.utils.data.DataLoader(
@@ -251,7 +251,7 @@ def main_worker(gpu, ngpus_per_node, args):
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
                        ])),
-        batch_size=BATCH_SIZE, shuffle=True)
+        batch_size=args.batch_size, shuffle=True)
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
