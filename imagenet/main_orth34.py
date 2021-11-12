@@ -295,6 +295,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         prefix="Epoch: [{}]".format(epoch))
 
     # switch to train mode
+    model.conv1= nn.Conv2d(1, 128, kernel_size=7, stride=2, padding=3,bias=False)
     model.train()
 
     end = time.time()
