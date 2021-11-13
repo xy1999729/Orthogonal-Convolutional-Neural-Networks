@@ -17,6 +17,7 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import torch.nn.functional as F
 import utils
 from pdb import set_trace as st
 from PIL import Image, ImageFile
