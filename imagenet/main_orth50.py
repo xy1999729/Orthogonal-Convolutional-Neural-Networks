@@ -17,16 +17,22 @@ import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
 import torchvision.models as models
+import torch.nn.functional as F
+from torch.autograd import Variable
 import utils
 from pdb import set_trace as st
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
 
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
-parser.add_argument('data', metavar='DIR',
-                    help='path to dataset')
+parser.add_argument('--dataset', default='cifar10', type=str,
+                    help='dataset (cifar10 [default] or cifar100)')
+# parser.add_argument('data', metavar='DIR',
+#                     help='path to dataset')
 parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet18',
                     choices=model_names,
                     help='model architecture: ' +
@@ -66,11 +72,13 @@ parser.add_argument('--dist-url', default='tcp://224.66.41.62:23456', type=str,
                     help='url used to set up distributed training')
 parser.add_argument('--dist-backend', default='nccl', type=str,
                     help='distributed backend')
+parser.add_argument('--modelname', default='resnet34', type=str,
+                    help='modelname')
 parser.add_argument('--seed', default=None, type=int,
                     help='seed for initializing training. ')
 parser.add_argument('--gpu', default=None, type=int,
                     help='GPU id to use.')
-parser.add_argument('--multiprocessing-distributed', action='store_true',
+parser.add_argument('--multiprocessing-distributed', action='store_true', default=False,
                     help='Use multi-processing distributed training to launch '
                          'N processes per node, which has N GPUs. This is the '
                          'fastest way to use PyTorch for either single node or '
@@ -135,9 +143,14 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](pretrained=True)
+#         print(model.conv1)
+        model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
+#         print(model.conv1)
+#         model.conv1= nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,bias=False)
+        model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
@@ -200,38 +213,78 @@ def main_worker(gpu, ngpus_per_node, args):
     cudnn.benchmark = True
 
     # Data loading code
-    traindir = os.path.join(args.data, 'train')
-    valdir = os.path.join(args.data, 'val')
+#     traindir = os.path.join(args.data, 'train')
+#     valdir = os.path.join(args.data, 'val')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
-    train_dataset = datasets.ImageFolder(
-        traindir,
-        transforms.Compose([
-            transforms.RandomResizedCrop(224),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            normalize,
-        ]))
+#     train_dataset = datasets.ImageFolder(
+#         traindir,
+#         transforms.Compose([
+#             transforms.RandomResizedCrop(224),
+#             transforms.RandomHorizontalFlip(),
+#             transforms.ToTensor(),
+#             normalize,
+#         ]))
 
     if args.distributed:
         train_sampler = torch.utils.data.distributed.DistributedSampler(train_dataset)
     else:
         train_sampler = None
 
-    train_loader = torch.utils.data.DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
-        num_workers=args.workers, pin_memory=True, sampler=train_sampler)
+#     train_loader = torch.utils.data.DataLoader(
+#         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
+#         num_workers=args.workers, pin_memory=True, sampler=train_sampler)
 
-    val_loader = torch.utils.data.DataLoader(
-        datasets.ImageFolder(valdir, transforms.Compose([
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
+#     val_loader = torch.utils.data.DataLoader(
+#         datasets.ImageFolder(valdir, transforms.Compose([
+#             transforms.Resize(256),
+#             transforms.CenterCrop(224),
+#             transforms.ToTensor(),
+#             normalize,
+#         ])),
+#         batch_size=args.batch_size, shuffle=False,
+#         num_workers=args.workers, pin_memory=True)
+
+#     train_loader = torch.utils.data.DataLoader(
+#         datasets.MNIST('data', train=True, download=True, 
+#                        transform=transforms.Compose([
+#                            transforms.ToTensor(),
+#                            transforms.Normalize((0.1307,), (0.3081,))
+#                        ])),
+#         batch_size=args.batch_size, shuffle=True)
+
+    
+#     val_loader = torch.utils.data.DataLoader(
+#         datasets.MNIST('data', train=False, transform=transforms.Compose([
+#                            transforms.ToTensor(),
+#                            transforms.Normalize((0.1307,), (0.3081,))
+#                        ])),
+#         batch_size=args.batch_size, shuffle=True)
+    transform_train = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Lambda(lambda x: F.pad(
+                                                            Variable(x.unsqueeze(0), requires_grad=False),
+                                                            (4,4,4,4),mode='reflect').data.squeeze()),
+                transforms.ToPILImage(),
+                transforms.RandomCrop(32),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+                ])
+    transform_test = transforms.Compose([
             transforms.ToTensor(),
-            normalize,
-        ])),
-        batch_size=args.batch_size, shuffle=False,
-        num_workers=args.workers, pin_memory=True)
+            normalize
+            ])
+    kwargs = {'num_workers': 1, 'pin_memory': True}
+    assert(args.dataset == 'cifar10' or args.dataset == 'cifar100')
+    train_loader = torch.utils.data.DataLoader(
+        datasets.__dict__[args.dataset.upper()]('../data', train=True, download=True,
+                         transform=transform_train),
+        batch_size=args.batch_size, shuffle=True, **kwargs)
+    val_loader = torch.utils.data.DataLoader(
+        datasets.__dict__[args.dataset.upper()]('../data', train=False, transform=transform_test),
+        batch_size=args.batch_size, shuffle=True, **kwargs)
 
     if args.evaluate:
         validate(val_loader, model, criterion, args)
@@ -260,7 +313,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
-            }, is_best)
+            }, is_best, filename = "./model/"+args.modelname+"_"+str(epoch))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
@@ -373,7 +426,7 @@ def validate(val_loader, model, criterion, args):
 def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
     torch.save(state, filename)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filename, filename+'best')
 
 
 class AverageMeter(object):
@@ -436,7 +489,7 @@ def accuracy(output, target, topk=(1,)):
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
