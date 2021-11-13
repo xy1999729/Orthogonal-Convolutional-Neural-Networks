@@ -270,6 +270,10 @@ def main_worker(gpu, ngpus_per_node, args):
                 transforms.ToTensor(),
                 normalize,
                 ])
+    transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+            ])
     kwargs = {'num_workers': 1, 'pin_memory': True}
     assert(args.dataset == 'cifar10' or args.dataset == 'cifar100')
     train_loader = torch.utils.data.DataLoader(
