@@ -139,11 +139,11 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.pretrained:
         print("=> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](pretrained=True)
-        model.conv1= nn.Conv2d(1, 128, kernel_size=7, stride=2, padding=3,bias=False)
+        model.conv1= nn.Conv2d(1, 128, 64, kernel_size=7, stride=2, padding=3,bias=False)
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
-        model.conv1= nn.Conv2d(1, 128, kernel_size=7, stride=2, padding=3,bias=False)
+        model.conv1= nn.Conv2d(1, 128, 64, kernel_size=7, stride=2, padding=3,bias=False)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
