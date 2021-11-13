@@ -259,7 +259,29 @@ def main_worker(gpu, ngpus_per_node, args):
 #                            transforms.Normalize((0.1307,), (0.3081,))
 #                        ])),
 #         batch_size=args.batch_size, shuffle=True)
-
+    with torch.no_grad():
+        if args.augment:
+            print ("Inside Augment")
+            transform_train = transforms.Compose([
+                    transforms.ToTensor(),
+                    transforms.Lambda(lambda x: F.pad(
+                                                            Variable(x.unsqueeze(0), requires_grad=False),
+                                                            (4,4,4,4),mode='reflect').data.squeeze()),
+                transforms.ToPILImage(),
+                transforms.RandomCrop(32),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                normalize,
+                ])
+        else:
+            transform_train = transforms.Compose([
+                transforms.ToTensor(),
+                normalize,
+                ])
+        transform_test = transforms.Compose([
+            transforms.ToTensor(),
+            normalize
+            ])
     kwargs = {'num_workers': 1, 'pin_memory': True}
     assert(args.dataset == 'cifar10' or args.dataset == 'cifar100')
     train_loader = torch.utils.data.DataLoader(
