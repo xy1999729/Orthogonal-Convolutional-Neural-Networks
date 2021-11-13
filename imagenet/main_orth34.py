@@ -252,7 +252,7 @@ def main_worker(gpu, ngpus_per_node, args):
         batch_size=args.batch_size, shuffle=True)
 
     
-    test_loader = torch.utils.data.DataLoader(
+    val_loader = torch.utils.data.DataLoader(
         datasets.MNIST('data', train=False, transform=transforms.Compose([
                            transforms.ToTensor(),
                            transforms.Normalize((0.1307,), (0.3081,))
