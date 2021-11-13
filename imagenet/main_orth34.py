@@ -286,7 +286,7 @@ def main_worker(gpu, ngpus_per_node, args):
                 'state_dict': model.state_dict(),
                 'best_acc1': best_acc1,
                 'optimizer' : optimizer.state_dict(),
-            }, is_best, filename = "model/"+args.modelname+"_"+str(epoch))
+            }, is_best, filename = "./model/"+args.modelname+"_"+str(epoch))
 
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
