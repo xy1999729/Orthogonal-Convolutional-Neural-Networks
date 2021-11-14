@@ -144,15 +144,15 @@ def main_worker(gpu, ngpus_per_node, args):
         print("=> using pre-trained model '{}'".format(args.arch))
         model = models.__dict__[args.arch](pretrained=True)
 #         print(model.conv1)
-#         model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True) resnet34
-        model.fc = nn.Linear(in_features=2048, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
+        model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True) resnet34
+#         model.fc = nn.Linear(in_features=2048, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
     else:
         print("=> creating model '{}'".format(args.arch))
         model = models.__dict__[args.arch]()
 #         print(model.conv1)
 #         model.conv1= nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3,bias=False)
-#         model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True) resnet34
-        model.fc = nn.Linear(in_features=2048, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
+        model.fc = nn.Linear(in_features=512, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True) resnet34
+#         model.fc = nn.Linear(in_features=2048, out_features=args.dataset == 'cifar10' and 10 or 100, bias=True)
 
     if args.distributed:
         # For multiprocessing distributed, DistributedDataParallel constructor
